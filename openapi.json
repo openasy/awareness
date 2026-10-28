@@ -1,0 +1,2490 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "OpenAsy Awareness API",
+    "version": "0.1.0",
+    "summary": "Run phishing simulations for your own people, train whoever clicks, and keep the training records ISO 27001 and SOC 2 ask for.",
+    "description": "Every screen of Awareness uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only; anything removed is deprecated first (ADR 0024). Errors use Problem Details (RFC 9457).\n\nEvery operation takes the session of a signed-in person or an API token, and names the role it needs (`x-openasy-role`: viewer, editor, admin; ADR 0003). A recipient is only ever mailed when its address is in a domain proven by a TXT record, and the simulated landing page captures nothing a person types (ADR 0071).\n\nThe pages a recipient sees (`/l/...`, `/r/...`, `/t/...`) are not part of this API; they take an opaque per-recipient token, not a sign-in.\n\nSign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
+    "license": {
+      "name": "AGPL-3.0-only",
+      "identifier": "AGPL-3.0-only"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "This Awareness"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Directory",
+      "description": "The organisation's own people and the domains it has proven; the gate on who can be reached."
+    },
+    {
+      "name": "Campaigns",
+      "description": "Phishing simulations, their templates, and what each recipient did."
+    },
+    {
+      "name": "Training",
+      "description": "Modules assigned to people, their completion, and the risk view over time."
+    },
+    {
+      "name": "Product",
+      "description": "Version, overview, settings and audit log of this Awareness."
+    }
+  ],
+  "paths": {
+    "/api/v1/domains": {
+      "get": {
+        "operationId": "listDomains",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "Domains",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      },
+      "post": {
+        "operationId": "createDomain",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "Add a domain",
+        "description": "Needs the editor role. It is pending until its TXT record is found; no address under it can be mailed before.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewDomain"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added, with the record to publish.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Domain"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "editor"
+      }
+    },
+    "/api/v1/domains/{id}": {
+      "get": {
+        "operationId": "getDomain",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "A domain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The domain's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Domain"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      },
+      "delete": {
+        "operationId": "deleteDomain",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "Delete a domain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The domain's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "description": "Needs the admin role."
+      }
+    },
+    "/api/v1/domains/{id}/verify": {
+      "post": {
+        "operationId": "verifyDomain",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "Look for the TXT record now",
+        "description": "Needs the editor role. The schedule looks again too, and marks a domain lost when its record has gone.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The domain's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The domain, verified or with why not.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Domain"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "editor"
+      }
+    },
+    "/api/v1/people": {
+      "get": {
+        "operationId": "listPeople",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "People",
+        "parameters": [
+          {
+            "name": "department",
+            "in": "query",
+            "description": "Only people in this department.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      }
+    },
+    "/api/v1/people/{id}": {
+      "get": {
+        "operationId": "getPerson",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "A person",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The person's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      }
+    },
+    "/api/v1/people/import": {
+      "post": {
+        "operationId": "importPeople",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "Import people from CSV",
+        "description": "Needs the editor role. A CSV with an email column, and optional name and department columns. Addresses outside the verified domains are left out.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "editor"
+      }
+    },
+    "/api/v1/people/sync": {
+      "post": {
+        "operationId": "syncIdentity",
+        "tags": [
+          "Directory"
+        ],
+        "summary": "Sync people from Identity",
+        "description": "Needs the admin role. Reads the Identity directory with the sealed viewer token set under Settings, and upserts everyone in a verified domain.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "502": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin"
+      }
+    },
+    "/api/v1/templates": {
+      "get": {
+        "operationId": "listTemplates",
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Built-in simulation templates",
+        "description": "Needs the viewer role. Obvious training drills with a visible banner and a fictional sender; none impersonates a real brand (ADR 0071).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer"
+      }
+    },
+    "/api/v1/campaigns": {
+      "get": {
+        "operationId": "listCampaigns",
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Campaigns",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      },
+      "post": {
+        "operationId": "createCampaign",
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Create and send a campaign",
+        "description": "Needs the editor role. Builds a recipient for every eligible person and sends through the relay in the background. The from address must be in a verified domain.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCampaign"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Created; the mail is sent in the background.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "editor"
+      }
+    },
+    "/api/v1/campaigns/{id}": {
+      "get": {
+        "operationId": "getCampaign",
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "A campaign",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The campaign's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      }
+    },
+    "/api/v1/modules": {
+      "get": {
+        "operationId": "listModules",
+        "tags": [
+          "Training"
+        ],
+        "summary": "Built-in training modules",
+        "description": "Needs the viewer role. The page and quiz questions, without the answers; the quiz is graded on the server.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer"
+      }
+    },
+    "/api/v1/training": {
+      "get": {
+        "operationId": "listAssignments",
+        "tags": [
+          "Training"
+        ],
+        "summary": "Training assignments",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "query",
+            "description": "Only this person's assignments.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "module",
+            "in": "query",
+            "description": "Only this module's assignments.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      },
+      "post": {
+        "operationId": "assignTraining",
+        "tags": [
+          "Training"
+        ],
+        "summary": "Assign a module to a person",
+        "description": "Needs the editor role. A required module is due in 14 days. Assigning the same module to the same person again keeps the first.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewAssignment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "editor"
+      }
+    },
+    "/api/v1/risk": {
+      "get": {
+        "operationId": "getRisk",
+        "tags": [
+          "Training"
+        ],
+        "summary": "Risk per person and per group, over time",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Risk"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "tags": [
+          "Product"
+        ],
+        "summary": "The SMTP relay and Identity connection",
+        "description": "Needs the admin role. Without the secrets: whether a password is set, and the Identity URL.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin"
+      }
+    },
+    "/api/v1/settings/smtp": {
+      "put": {
+        "operationId": "setSmtp",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Set the SMTP relay",
+        "description": "Needs the admin role. The password is sealed with the install's key (ADR 0021). Awareness sends no mail any other way.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmtpSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Saved."
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin"
+      }
+    },
+    "/api/v1/settings/identity": {
+      "put": {
+        "operationId": "setIdentity",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Connect the Identity directory",
+        "description": "Needs the admin role. The viewer token is sealed with the install's key (ADR 0021).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentitySettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Saved."
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin"
+      }
+    },
+    "/api/v1/audit": {
+      "get": {
+        "operationId": "listAudit",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Audit log",
+        "description": "Needs the admin role. Campaigns, domain changes, directory syncs and setting changes, the newest 1000. Append-only.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin"
+      }
+    },
+    "/api/v1/summary": {
+      "get": {
+        "operationId": "getSummary",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Overview",
+        "description": "Needs the viewer role. Counts for the first screen.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer"
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "operationId": "listProducts",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Other products of this install",
+        "responses": {
+          "200": {
+            "description": "From OPENASY_PRODUCTS, for the product switcher.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role."
+      }
+    },
+    "/api/v1/version": {
+      "get": {
+        "operationId": "getVersion",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Version",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The running version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Version"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "liveness",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Liveness",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The process is running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "readiness",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Readiness",
+        "description": "Ready while its SQLite file answers.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Ready to serve.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "metrics",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Prometheus metrics",
+        "description": "Training completion and the last campaign's numbers, for Compliance (ADR 0058).",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Metrics in the Prometheus text format.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-openasy-session",
+        "description": "The browser session after signing in (`openasy-session` when Awareness runs on plain http://localhost). Requests that change something must come from the Awareness origin."
+      },
+      "apiToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An API token created under Settings → API tokens (`oa_awareness_...`): one role, always an expiry (ADR 0003)."
+      },
+      "adminToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Only when Awareness is started by its tests or a local script: one shared token with the admin role. A production install does not have it."
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "An error, as RFC 9457 Problem Details.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid-json",
+              "invalid-body",
+              "conflict",
+              "not-found",
+              "internal-error",
+              "unauthenticated",
+              "invalid-credentials",
+              "mfa-required",
+              "mfa-setup-required",
+              "forbidden",
+              "cross-site",
+              "rate-limited"
+            ],
+            "description": "Stable; match on this."
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "Version": {
+        "type": "object",
+        "required": [
+          "product",
+          "version"
+        ],
+        "properties": {
+          "product": {
+            "const": "awareness"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductLink": {
+        "type": "object",
+        "required": [
+          "id",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The product, as OpenAsy names it.",
+            "examples": [
+              "identity"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address people open it at.",
+            "examples": [
+              "https://identity.example.com"
+            ]
+          }
+        }
+      },
+      "ProductList": {
+        "type": "object",
+        "required": [
+          "products"
+        ],
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductLink"
+            }
+          }
+        }
+      },
+      "Domain": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "state",
+          "proof",
+          "createdAt",
+          "createdBy",
+          "verifiedAt",
+          "checkedAt",
+          "error",
+          "people"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "examples": [
+              "example.com"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "verified",
+              "lost"
+            ],
+            "description": "A recipient is only ever mailed when its address is in a verified domain. lost: it was verified, and its record was gone at the last check."
+          },
+          "proof": {
+            "type": "object",
+            "required": [
+              "name",
+              "type",
+              "value"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "examples": [
+                  "_openasy-awareness.example.com"
+                ]
+              },
+              "type": {
+                "const": "TXT"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "description": "The TXT record the domain's owner publishes to prove it."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "verifiedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Why the last check did not find the record."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "people": {
+            "type": "integer",
+            "description": "People whose email is in this domain."
+          }
+        }
+      },
+      "DomainList": {
+        "type": "object",
+        "required": [
+          "domains"
+        ],
+        "properties": {
+          "domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Domain"
+            }
+          }
+        }
+      },
+      "NewDomain": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "examples": [
+              "example.com"
+            ]
+          }
+        }
+      },
+      "Person": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "name",
+          "department",
+          "source",
+          "active",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "identity",
+              "csv"
+            ],
+            "description": "Where the person came from: the Identity directory or a CSV import."
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PersonList": {
+        "type": "object",
+        "required": [
+          "people"
+        ],
+        "properties": {
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            }
+          }
+        }
+      },
+      "ImportResult": {
+        "type": "object",
+        "required": [
+          "added",
+          "updated",
+          "rejected",
+          "rejectedEmails"
+        ],
+        "properties": {
+          "added": {
+            "type": "integer"
+          },
+          "updated": {
+            "type": "integer"
+          },
+          "rejected": {
+            "type": "integer",
+            "description": "Addresses left out because they are not in a verified domain."
+          },
+          "rejectedEmails": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Template": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "displayFrom",
+          "subject",
+          "tell",
+          "lines",
+          "action"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "document",
+              "it",
+              "delivery",
+              "hr"
+            ]
+          },
+          "displayFrom": {
+            "type": "string",
+            "description": "The fictional sender shown in the mail, always under example-corp.test. Never a real brand (ADR 0071)."
+          },
+          "subject": {
+            "type": "string"
+          },
+          "tell": {
+            "type": "string",
+            "description": "The tell a real version of this lure would show, taught on the landing page."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "action": {
+            "type": "string"
+          }
+        }
+      },
+      "TemplateList": {
+        "type": "object",
+        "required": [
+          "templates"
+        ],
+        "properties": {
+          "templates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Template"
+            }
+          }
+        }
+      },
+      "Question": {
+        "type": "object",
+        "required": [
+          "prompt",
+          "options"
+        ],
+        "properties": {
+          "prompt": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Module": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "minutes",
+          "required",
+          "body",
+          "questions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "minutes": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "body": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            }
+          }
+        }
+      },
+      "ModuleList": {
+        "type": "object",
+        "required": [
+          "modules"
+        ],
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Module"
+            }
+          }
+        }
+      },
+      "CampaignStats": {
+        "type": "object",
+        "required": [
+          "recipients",
+          "sent",
+          "failed",
+          "opened",
+          "clicked",
+          "submitted",
+          "reported"
+        ],
+        "properties": {
+          "recipients": {
+            "type": "integer"
+          },
+          "sent": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "opened": {
+            "type": "integer"
+          },
+          "clicked": {
+            "type": "integer"
+          },
+          "submitted": {
+            "type": "integer"
+          },
+          "reported": {
+            "type": "integer"
+          }
+        }
+      },
+      "Campaign": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "templateId",
+          "fromName",
+          "fromEmail",
+          "subject",
+          "reportAddress",
+          "department",
+          "state",
+          "createdAt",
+          "createdBy",
+          "sentAt",
+          "error",
+          "stats"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string"
+          },
+          "fromName": {
+            "type": "string"
+          },
+          "fromEmail": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "reportAddress": {
+            "type": "string",
+            "description": "Where a recipient reports the mail. A reported mail counts for the campaign (ADR 0071)."
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "sending",
+              "sent",
+              "failed"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The admin or editor who created it; every campaign names one (ADR 0071)."
+          },
+          "sentAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stats": {
+            "$ref": "#/components/schemas/CampaignStats"
+          }
+        }
+      },
+      "CampaignList": {
+        "type": "object",
+        "required": [
+          "campaigns"
+        ],
+        "properties": {
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Campaign"
+            }
+          }
+        }
+      },
+      "NewCampaign": {
+        "type": "object",
+        "required": [
+          "name",
+          "templateId",
+          "fromEmail",
+          "reportAddress"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "A built-in template id, from GET /api/v1/templates."
+          },
+          "fromEmail": {
+            "type": "string",
+            "description": "The from address. Must be in a verified domain."
+          },
+          "reportAddress": {
+            "type": "string"
+          },
+          "fromName": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string",
+            "description": "Only people in this department; omit for everyone."
+          }
+        }
+      },
+      "Assignment": {
+        "type": "object",
+        "required": [
+          "id",
+          "moduleId",
+          "moduleTitle",
+          "personId",
+          "personName",
+          "reason",
+          "assignedAt",
+          "dueAt",
+          "startedAt",
+          "completedAt",
+          "score",
+          "passed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "moduleTitle": {
+            "type": "string"
+          },
+          "personId": {
+            "type": "string"
+          },
+          "personName": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dueAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AssignmentList": {
+        "type": "object",
+        "required": [
+          "assignments"
+        ],
+        "properties": {
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Assignment"
+            }
+          }
+        }
+      },
+      "NewAssignment": {
+        "type": "object",
+        "required": [
+          "moduleId",
+          "personId"
+        ],
+        "properties": {
+          "moduleId": {
+            "type": "string"
+          },
+          "personId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "RiskPerson": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "department",
+          "campaigns",
+          "clicked",
+          "submitted",
+          "reported",
+          "trainingDue",
+          "trainingDone",
+          "risk"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "campaigns": {
+            "type": "integer"
+          },
+          "clicked": {
+            "type": "integer"
+          },
+          "submitted": {
+            "type": "integer"
+          },
+          "reported": {
+            "type": "integer"
+          },
+          "trainingDue": {
+            "type": "integer"
+          },
+          "trainingDone": {
+            "type": "integer"
+          },
+          "risk": {
+            "type": "integer",
+            "description": "0 to 100: submissions weigh most, clicks next, reporting lowers it, unfinished training keeps it up."
+          }
+        }
+      },
+      "RiskGroup": {
+        "type": "object",
+        "required": [
+          "department",
+          "people",
+          "risk",
+          "clicked",
+          "reported"
+        ],
+        "properties": {
+          "department": {
+            "type": "string"
+          },
+          "people": {
+            "type": "integer"
+          },
+          "risk": {
+            "type": "integer"
+          },
+          "clicked": {
+            "type": "integer"
+          },
+          "reported": {
+            "type": "integer"
+          }
+        }
+      },
+      "RiskPoint": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "at",
+          "clickRate",
+          "reportRate"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "clickRate": {
+            "type": "number"
+          },
+          "reportRate": {
+            "type": "number"
+          }
+        }
+      },
+      "Risk": {
+        "type": "object",
+        "required": [
+          "groups",
+          "people",
+          "timeline"
+        ],
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskGroup"
+            }
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskPerson"
+            }
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskPoint"
+            }
+          }
+        }
+      },
+      "TrainingSummary": {
+        "type": "object",
+        "required": [
+          "assigned",
+          "completed",
+          "overdue",
+          "completionPct"
+        ],
+        "properties": {
+          "assigned": {
+            "type": "integer"
+          },
+          "completed": {
+            "type": "integer"
+          },
+          "overdue": {
+            "type": "integer"
+          },
+          "completionPct": {
+            "type": "integer"
+          }
+        }
+      },
+      "SmtpStatus": {
+        "type": "object",
+        "required": [
+          "host",
+          "port",
+          "security",
+          "username",
+          "hasPassword"
+        ],
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "security": {
+            "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hasPassword": {
+            "type": "boolean"
+          }
+        }
+      },
+      "IdentityStatus": {
+        "type": "object",
+        "required": [
+          "url",
+          "connected"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "connected": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Summary": {
+        "type": "object",
+        "required": [
+          "domains",
+          "people",
+          "campaigns",
+          "lastCampaign",
+          "training",
+          "smtp",
+          "identity"
+        ],
+        "properties": {
+          "domains": {
+            "type": "object",
+            "required": [
+              "verified",
+              "pending",
+              "lost"
+            ],
+            "properties": {
+              "verified": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              },
+              "lost": {
+                "type": "integer"
+              }
+            }
+          },
+          "people": {
+            "type": "integer"
+          },
+          "campaigns": {
+            "type": "integer"
+          },
+          "lastCampaign": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Campaign"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "training": {
+            "$ref": "#/components/schemas/TrainingSummary"
+          },
+          "smtp": {
+            "type": "boolean",
+            "description": "Whether an SMTP relay is set."
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentityStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Settings": {
+        "type": "object",
+        "required": [
+          "smtp",
+          "identity"
+        ],
+        "properties": {
+          "smtp": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtpStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentityStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "SmtpSettings": {
+        "type": "object",
+        "required": [
+          "host",
+          "port"
+        ],
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "security": {
+            "type": "string",
+            "enum": [
+              "none",
+              "starttls",
+              "tls"
+            ]
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "description": "Sealed with the install's key (ADR 0021); never sent back."
+          },
+          "insecureTls": {
+            "type": "boolean",
+            "description": "For a test relay with a self-signed certificate only."
+          }
+        }
+      },
+      "IdentitySettings": {
+        "type": "object",
+        "required": [
+          "url",
+          "token"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The Identity base URL."
+          },
+          "token": {
+            "type": "string",
+            "description": "A viewer token; sealed with the install's key."
+          }
+        }
+      },
+      "AuditEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "at",
+          "actor",
+          "action",
+          "target",
+          "detail"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "AuditList": {
+        "type": "object",
+        "required": [
+          "entries"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEntry"
+            }
+          }
+        }
+      }
+    }
+  }
+}

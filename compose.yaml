@@ -1,0 +1,38 @@
+# Awareness. It runs phishing simulations for your own people, trains whoever clicks, and keeps the training records
+# ISO 27001 and SOC 2 ask for. It mails only addresses in domains you have proven with a DNS TXT record, through your
+# own SMTP relay, and the simulated landing page never keeps anything a person types (ADR 0071).
+#
+#   openssl rand -hex 32 > openasy-kek   # Awareness's key for the SMTP password and Identity token (ADR 0021). Keep it with your backups
+#   docker compose up -d
+#   docker compose logs awareness | grep 'no owner yet'   # the one-time link that creates the owner account
+services:
+  awareness:
+    image: ghcr.io/openasy/awareness:0.1.0
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+    ports:
+      - "127.0.0.1:8080:8080" # UI and API, and the pages recipients open; put a TLS proxy in front to reach it from elsewhere
+    volumes:
+      - awareness-data:/data # SQLite database: domains, people, campaigns, training and the audit log
+    secrets:
+      - openasy-kek # mounted at /run/secrets/openasy-kek
+    environment:
+      # The address people and recipients open Awareness at; with a TLS proxy in front, its https:// URL. The links in
+      # the simulated mail and the training point here, so recipients' browsers must be able to reach it.
+      AWARENESS_PUBLIC_URL: ${AWARENESS_PUBLIC_URL:-http://localhost:8080}
+      # How often the verified domains' TXT records are re-read.
+      AWARENESS_RECHECK_HOURS: ${AWARENESS_RECHECK_HOURS:-24}
+      # Sign in with your identity provider (OIDC), see the README:
+      # OPENASY_OIDC_ISSUER: https://login.example.com
+      # OPENASY_OIDC_CLIENT_ID: awareness
+      # OPENASY_OIDC_CLIENT_SECRET: ${OPENASY_OIDC_CLIENT_SECRET}
+
+volumes:
+  awareness-data:
+
+secrets:
+  openasy-kek:
+    file: ./openasy-kek
