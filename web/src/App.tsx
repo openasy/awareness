@@ -45,7 +45,7 @@ import {
   type Summary,
   type Template,
 } from "./api.ts";
-import { useT, type T } from "./i18n.ts";
+import { useT, type T, viewerLocale, setViewerLocale } from "./i18n.ts";
 
 const PAGES = ["campaigns", "people", "domains", "training", "risk", "connections", "audit", "account", "members", "signin", "tokens"] as const;
 type Page = "overview" | (typeof PAGES)[number];
@@ -106,7 +106,7 @@ function useAct(reload: () => void) {
   return [act, error] as const;
 }
 
-const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+const when = (iso: string) => new Date(iso).toLocaleString(viewerLocale(), { dateStyle: "medium", timeStyle: "short" });
 const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 1000) / 10}%` : "–");
 
 function ErrorText({ message }: { message?: string }) {
@@ -825,6 +825,7 @@ export function App() {
   const installBrand = useInstallBrand();
   const [theme] = useThemePreference();
   const [locale] = useLocalePreference();
+  setViewerLocale(locale);
   return (
     <BrandProvider theme={theme} locale={locale} brand={{ name: "OpenAsy", organization: undefined, ...installBrand }} className="min-h-screen">
       <AuthGate product="OpenAsy Awareness">
