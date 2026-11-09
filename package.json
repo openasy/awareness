@@ -1,6 +1,6 @@
 {
   "name": "@openasy/awareness",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "OpenAsy Awareness: run phishing simulations for your own people, train whoever clicks, and keep the training records ISO 27001 and SOC 2 ask for.",
   "license": "AGPL-3.0-only",

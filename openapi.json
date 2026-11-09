@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "OpenAsy Awareness API",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "summary": "Run phishing simulations for your own people, train whoever clicks, and keep the training records ISO 27001 and SOC 2 ask for.",
     "description": "Every screen of Awareness uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only; anything removed is deprecated first (ADR 0024). Errors use Problem Details (RFC 9457).\n\nEvery operation takes the session of a signed-in person or an API token, and names the role it needs (`x-openasy-role`: viewer, editor, admin; ADR 0003). A recipient is only ever mailed when its address is in a domain proven by a TXT record, and the simulated landing page captures nothing a person types (ADR 0071).\n\nThe pages a recipient sees (`/l/...`, `/r/...`, `/t/...`) are not part of this API; they take an opaque per-recipient token, not a sign-in.\n\nSign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
     "license": {
